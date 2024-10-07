@@ -1,0 +1,42 @@
+version: '3'
+services:
+  stablediff-rocm:
+    build:
+      context: .
+      dockerfile: Dockerfile.rocm
+    container_name: stablediff-rocm-runner
+    environment:
+      TZ: "Europe/Rome"
+      ROC_ENABLE_PRE_VEGA: 1
+      COMMANDLINE_ARGS: "--listen --lowvram --no-half --skip-torch-cuda-test"
+      HSA_OVERRIDE_GFX_VERSION: "10.3.0"
+      ROCR_VISIBLE_DEVICES: 1
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      rocm-smi; . /stablediff.env; echo launch.py $$COMMANDLINE_ARGS;
+      if [ ! -d /stablediff-web/.git ]; then
+        cp -a /sdtemp/. /stablediff-web/
+      fi;
+      cd /stablediff-web; python launch.py
+    ports:
+      - "7860:7860"
+    devices:
+      - "/dev/kfd:/dev/kfd"
+      - "/dev/dri:/dev/dri"
+    group_add:
+      - video
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - ./cache:/root/.cache
+      - ./stablediff.env:/stablediff.env
+      - ./stablediff-web:/stablediff-web
+      - ./stablediff-models:/stablediff-web/models/Stable-diffusion
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '3.0'
+          memory: 26G

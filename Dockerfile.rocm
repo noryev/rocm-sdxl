@@ -1,0 +1,31 @@
+FROM rocm/dev-ubuntu-22.04
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONIOENCODING=UTF-8
+
+WORKDIR /sdtemp
+RUN apt-get update && \
+    apt-get install -y \
+    wget \
+    git \
+    python3 \
+    python3-pip \
+    python-is-python3 \
+    libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+
+RUN python -m pip install --upgrade pip wheel
+RUN git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui /sdtemp
+
+RUN python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.6
+RUN python -m pip install opencv-python-headless
+
+# Test torch installation
+RUN python -c "import torch; print(torch.__version__)"
+
+# Set up the working directory for stable-diffusion-webui
+WORKDIR /sdtemp/stable-diffusion-webui
+
+# Expose the port
+EXPOSE 7860
