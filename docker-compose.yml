@@ -1,7 +1,7 @@
 version: '3'
 services:
   stablediff-rocm:
-    build:
+    build: 
       context: .
       dockerfile: Dockerfile.rocm
     container_name: stablediff-rocm-runner
@@ -11,14 +11,15 @@ services:
       COMMANDLINE_ARGS: "--listen --lowvram --no-half --skip-torch-cuda-test"
       HSA_OVERRIDE_GFX_VERSION: "10.3.0"
       ROCR_VISIBLE_DEVICES: 1
-      #PYTORCH_HIP_ALLOC_CONF: "garbage_collection_threshold:0.6,max_split_size_mb:128"
-    entrypoint: ["/bin/sh", "-c"]
+    entrypoint: ["/bin/bash", "-c"]
     command: >
-      rocm-smi; . /stablediff.env; echo launch.py $$COMMANDLINE_ARGS;
-      if [ ! -d /stablediff-web/.git ]; then
-        cp -a /sdtemp/. /stablediff-web/
-      fi;
-      python launch.py
+      "rocm-smi;
+      echo 'Environment:';
+      env;
+      echo 'Contents of /stablediff-web:';
+      ls -la /stablediff-web;
+      echo 'Launching Stable Diffusion WebUI:';
+      python launch.py $$COMMANDLINE_ARGS"
     ports:
       - "7860:7860"
     devices:
@@ -32,7 +33,6 @@ services:
     security_opt:
       - seccomp:unconfined
     volumes:
-      - ./cache:/root/.cache
-      - ./stablediff.env:/stablediff.env
-      - ./stablediff-web:/stablediff-web
-      - ./stablediff-models:/stablediff-web/models/Stable-diffusion
+      - ./models:/stablediff-web/models
+    tty: true
+    stdin_open: true
